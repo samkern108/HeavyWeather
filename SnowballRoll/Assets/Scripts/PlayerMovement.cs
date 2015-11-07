@@ -17,8 +17,7 @@ public class PlayerMovement : MonoBehaviour {
 
 	//##  JUMPING  ##//
 	private bool jumping = false;
-	private float initialJumpSpeed = .4f;
-	private float currentJumpSpeed;
+	private float initialJumpSpeed = .3f;
 
 	//## FALLING ##//
 	private float terminalVelocity = -.8f;
@@ -26,40 +25,16 @@ public class PlayerMovement : MonoBehaviour {
 	private float gravityFactor = .02f;	
 
 	//## SNOW COLLECTION ##//
-	private float scale = 5;
-	private float scaleDownFactor = .03f;
+	private float scale = 12f;
+	private float scaleDownFactor = .1f;
 	private float scaleUpFactor = .015f;
-	private float maxScale = 30f;
-	private float minScale = .3f;
+	private float maxScale = 60f;
+	private float minScale = 6f;
 
 	bool onDirt;
 	bool onSnow;
 
 	private bool inputDisabled = false;
-	
-	private void Linecast()
-	{
-		Vector3 linecastDown = new Vector3(transform.position.x, transform.position.y - 1, transform.position.z);
-		onDirt = Physics2D.Linecast (transform.position, linecastDown, 1 << LayerMask.NameToLayer ("Dirt"));
-		onSnow = Physics2D.Linecast (transform.position, linecastDown, 1 << LayerMask.NameToLayer ("Snow"));
-
-		if (onSnow) {
-			scale += scaleUpFactor;
-			if(scale > maxScale) {
-				scale = maxScale;
-			}
-		} else if (onDirt) {
-			scale -= scaleDownFactor;
-			if(scale < minScale) {
-				GameManager.inst.GameOver();
-			}
-		}
-	}
-
-	public void SetInstance()
-	{
-		inst = this;
-	}
 
 	void Update () 
 	{
@@ -78,13 +53,99 @@ public class PlayerMovement : MonoBehaviour {
 		}
 	}
 
+	private void Move()
+	{
+		/*Rigidbody2D rgbd = this.GetComponent <Rigidbody2D>();
+
+		float hInput = Input.GetAxisRaw ("Horizontal");
+		if (hInput > 0) {
+
+			rgbd.velocity += new Vector2(.01f * collisionNormal.x, -.01f * collisionNormal.y);
+
+		} else if (hInput < 0) {
+			float speedx = rgbd.velocity.x - .01f * collisionNormal.x;
+			float speedy = rgbd.velocity.y + .01f * collisionNormal.y;
+			rgbd.velocity -= new Vector2((speedx > 0) ? speedx : 0, (speedy < 0) ? speedy : 0);
+
+			Debug.Log (speedx + " " + speedy);
+
+		}
+		Debug.Log (rgbd.velocity);*/
+	}
+
+	Vector2 jumpVector;
+	Vector2 jumpNormal;
+
+	private void Jump()
+	{
+		bool jumpButtonDown = Input.GetKey ("space");
+		bool jumpButtonUp = Input.GetKeyUp ("space");
+	
+		jumpNormal = collisionNormal;
+		
+		if (jumpButtonDown && (onDirt || onSnow)) {
+			if (!jumping) {
+				jumpVector.x = initialJumpSpeed * collisionNormal.x;
+				jumpVector.y = initialJumpSpeed * 1.5f * collisionNormal.y;
+				jumping = true;
+			}
+		}
+		
+		if (jumping) {
+			jumpVector.y -= gravityFactor;
+			if (jumpVector.y < 0) {
+				jumping = false;
+				jumpVector.y = 0;
+			}
+			currentSpeedVector.y = jumpVector.y;
+			currentSpeedVector.x = jumpVector.x;
+		}
+	}
+
+
+
+	Vector3 collisionNormal;
+	void OnCollisionEnter2D(Collision2D collisionInfo)
+	{
+		collisionNormal = collisionInfo.contacts[0].normal;
+	}
+	
+
+	private void Linecast()
+	{
+		Vector3 linecastDown = new Vector3(transform.position.x, transform.position.y - 1, transform.position.z);
+		onDirt = Physics2D.Linecast (transform.position, linecastDown, 1 << LayerMask.NameToLayer ("Dirt"));
+		onSnow = Physics2D.Linecast (transform.position, linecastDown, 1 << LayerMask.NameToLayer ("Snow"));
+		
+		if (onSnow) {
+			scale += scaleUpFactor;
+			if(scale > maxScale) {
+				scale = maxScale;
+			}
+		} else if (onDirt) {
+			scale -= scaleDownFactor;
+			if(scale < minScale) {
+				GameManager.inst.GameOver();
+			}
+		}
+	}
+
+
+
+
+
+	public void SetInstance()
+	{
+		inst = this;
+	}
+
 	public void FreezeMovement()
 	{
 		inputDisabled = true;
 		this.GetComponent<Rigidbody2D>().gravityScale = 0;
 		this.GetComponent<Rigidbody2D>().velocity = new Vector2();
 	}
-
+	
 	public void StartOver()
 	{
 		inputDisabled = false;
@@ -92,51 +153,7 @@ public class PlayerMovement : MonoBehaviour {
 		transform.position = new Vector3 (-9.76f, 7.04f, 0f); //hacky hacky hack
 		currentSpeedVector = new Vector3 ();
 		jumping = false;
-		currentJumpSpeed = 0f;
+		jumpVector = new Vector2 ();
 		scale = 5f;
-	}
-
-	private void Move()
-	{
-		float hInput = Input.GetAxisRaw ("Horizontal");
-		if (hInput > 0) {
-			currentSpeedVector.x += Mathf.Sign (hInput) * acceleration;
-			if (currentSpeedVector.x > maxSpeed || currentSpeedVector.x < -maxSpeed) {
-				currentSpeedVector.x = Mathf.Sign (hInput) * maxSpeed;
-			}
-		} else if (hInput < 0) {
-			currentSpeedVector.x -= deceleration;
-			if(currentSpeedVector.x < 0) {
-				currentSpeedVector.x = 0;
-			}
-		}
-	}
-
-	private void Jump()
-	{
-		bool jumpButtonDown = Input.GetKey ("space");
-		bool jumpButtonUp = Input.GetKeyUp ("space");
-		
-		if (jumpButtonDown && (onDirt || onSnow)) {
-			if (!jumping) {
-				currentJumpSpeed = initialJumpSpeed;
-				jumping = true;
-			}
-		} else if (jumpButtonUp && currentJumpSpeed > 0) {
-			currentJumpSpeed -= gravityFactor;
-			if (currentJumpSpeed < 0) {
-				jumping = false;
-				currentJumpSpeed = 0;
-			}
-		}
-		
-		if (jumping) {
-			currentJumpSpeed -= gravityFactor;
-			if (currentJumpSpeed < 0) {
-				jumping = false;
-				currentJumpSpeed = 0;
-			}
-			currentSpeedVector.y = currentJumpSpeed;
-		}
 	}
 }
