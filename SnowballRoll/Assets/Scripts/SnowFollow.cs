@@ -12,6 +12,6 @@ public class SnowFollow : MonoBehaviour {
 
     public void UpdatePos(Vector3 pos)
     {
-        this.transform.position = new Vector3(pos.x, pos.y + 10, pos.z);
+        this.transform.position = new Vector3(pos.x + 10, pos.y + 10, pos.z);
     }
 }

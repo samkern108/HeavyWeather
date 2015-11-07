@@ -72,6 +72,7 @@ public class PlayerMovement : MonoBehaviour {
 			Linecast ();
 			transform.position += currentSpeedVector;
 			CameraFollow.inst.UpdatePos (transform.position);
+            SnowFollow.instance.UpdatePos(transform.position);
 
 			transform.localScale = new Vector3 (scale, scale, 1);
 		}
@@ -116,7 +117,7 @@ public class PlayerMovement : MonoBehaviour {
 		bool jumpButtonDown = Input.GetKey ("space");
 		bool jumpButtonUp = Input.GetKeyUp ("space");
 		
-		if (jumpButtonDown) {
+		if (jumpButtonDown && (onDirt || onSnow)) {
 			if (!jumping) {
 				currentJumpSpeed = initialJumpSpeed;
 				jumping = true;
