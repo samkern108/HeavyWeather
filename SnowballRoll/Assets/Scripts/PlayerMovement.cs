@@ -3,14 +3,14 @@ using System.Collections;
 
 public class PlayerMovement : MonoBehaviour {
 
+	public static PlayerMovement inst;
+
 	//## INPUT ##//
 	private float vAxis = 0;
 	private float hAxis = 0;
-	private bool boosting = false;
 
 	//## ROLLING ##//
 	private Vector3 currentSpeedVector;
-	private float boostSpeed = .4f;
 	private float maxSpeed = .2f;
 	private float acceleration = .02f;
 	private float deceleration = .02f;
@@ -18,7 +18,6 @@ public class PlayerMovement : MonoBehaviour {
 	//##  JUMPING  ##//
 	private bool jumping = false;
 	private float initialJumpSpeed = .4f;
-	private float boostJumpSpeed = .6f;
 	private float currentJumpSpeed;
 
 	//## FALLING ##//
@@ -27,31 +26,73 @@ public class PlayerMovement : MonoBehaviour {
 	private float gravityFactor = .02f;	
 
 	//## SNOW COLLECTION ##//
-	private int snow = 0;
-	private int scale = 1;
+	private float scale = 5;
+	private float scaleDownFactor = .03f;
+	private float scaleUpFactor = .015f;
+	private float maxScale = 30f;
+	private float minScale = .3f;
 
 	bool onDirt;
 	bool onSnow;
+
+	private bool inputDisabled = false;
 	
 	private void Linecast()
 	{
 		Vector3 linecastDown = new Vector3(transform.position.x, transform.position.y - 1, transform.position.z);
 		onDirt = Physics2D.Linecast (transform.position, linecastDown, 1 << LayerMask.NameToLayer ("Dirt"));
 		onSnow = Physics2D.Linecast (transform.position, linecastDown, 1 << LayerMask.NameToLayer ("Snow"));
+
+		if (onSnow) {
+			scale += scaleUpFactor;
+			if(scale > maxScale) {
+				scale = maxScale;
+			}
+		} else if (onDirt) {
+			scale -= scaleDownFactor;
+			if(scale < minScale) {
+				GameManager.inst.GameOver();
+			}
+		}
 	}
 
+	void Start()
+	{
+		inst = this;
+	}
 
 	void Update () 
 	{
-//		boosting = Input.GetKey ("z");
-		vAxis = Input.GetAxis ("Vertical");
-		hAxis = Input.GetAxis ("Horizontal");
+		if (!inputDisabled) {
+			vAxis = Input.GetAxis ("Vertical");
+			hAxis = Input.GetAxis ("Horizontal");
 
-		Move ();
-		Jump ();
-		Linecast ();
-		transform.position += currentSpeedVector;
-		CameraFollow.inst.UpdatePos (transform.position);
+			Move ();
+			Jump ();
+			Linecast ();
+			transform.position += currentSpeedVector;
+			CameraFollow.inst.UpdatePos (transform.position);
+
+			transform.localScale = new Vector3 (scale, scale, 1);
+		}
+	}
+
+	public void FreezeMovement()
+	{
+		inputDisabled = true;
+		this.GetComponent<Rigidbody2D>().gravityScale = 0;
+		this.GetComponent<Rigidbody2D>().velocity = new Vector2();
+	}
+
+	public void StartOver()
+	{
+		inputDisabled = false;
+		this.GetComponent<Rigidbody2D>().gravityScale = 1f;
+		transform.position = new Vector3 (-9.76f, 7.04f, 0f); //hacky hacky hack
+		currentSpeedVector = new Vector3 ();
+		jumping = false;
+		currentJumpSpeed = 0f;
+		scale = 5f;
 	}
 
 	private void Move()
@@ -77,11 +118,7 @@ public class PlayerMovement : MonoBehaviour {
 		
 		if (jumpButtonDown) {
 			if (!jumping) {
-				if (boosting) {
-					currentJumpSpeed = boostJumpSpeed;
-				} else {
-					currentJumpSpeed = initialJumpSpeed;
-				}
+				currentJumpSpeed = initialJumpSpeed;
 				jumping = true;
 			}
 		} else if (jumpButtonUp && currentJumpSpeed > 0) {
