@@ -18,29 +18,58 @@ public class GameManager : MonoBehaviour {
 
 	public static GameManager inst;
 
+    public PlayerMovement player;
+
+    public GameObject startScreen;
+    public GameObject victoryScreen;
+    public GameObject failureScreen;
+
 	public void GameOver()
 	{
 		PlayerMovement.inst.FreezeMovement ();
+        failureScreen.SetActive(true);
 	}
 
 	public void Victory()
 	{
 		PlayerMovement.inst.FreezeMovement ();
+        victoryScreen.SetActive(true);
 	}
+
+    public void Reset()
+    {
+        victoryScreen.SetActive(false);
+        failureScreen.SetActive(false);
+        StartGame();
+    }
+
+    public void Exit()
+    {
+        Application.Quit();
+    }
 
 	public void StartGame()
 	{
-		DisplayInstructions ();
+        startScreen.SetActive(false);
 		PlayerMovement.inst.StartOver ();
 	}
 
 	public void DisplayInstructions()
 	{
-
+        victoryScreen.SetActive(false);
+        failureScreen.SetActive(false);
+        startScreen.SetActive(true);
 	}
+
+    void SetInstances()
+    {
+        player.SetInstance();
+    }
 	
 	void Start () {
 		inst = this;
-		StartGame ();
+        SetInstances();
+        PlayerMovement.inst.FreezeMovement();
+        DisplayInstructions();
 	}
 }

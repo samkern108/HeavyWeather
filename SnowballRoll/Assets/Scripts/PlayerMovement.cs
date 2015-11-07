@@ -56,7 +56,7 @@ public class PlayerMovement : MonoBehaviour {
 		}
 	}
 
-	void Start()
+	public void SetInstance()
 	{
 		inst = this;
 	}
