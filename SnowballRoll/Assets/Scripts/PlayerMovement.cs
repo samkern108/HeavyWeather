@@ -28,6 +28,18 @@ public class PlayerMovement : MonoBehaviour {
 
 	//## SNOW COLLECTION ##//
 	private int snow = 0;
+	private int scale = 1;
+
+	bool onDirt;
+	bool onSnow;
+	
+	private void Linecast()
+	{
+		Vector3 linecastDown = new Vector3(transform.position.x, transform.position.y - 1, transform.position.z);
+		onDirt = Physics2D.Linecast (transform.position, linecastDown, 1 << LayerMask.NameToLayer ("Dirt"));
+		onSnow = Physics2D.Linecast (transform.position, linecastDown, 1 << LayerMask.NameToLayer ("Snow"));
+	}
+
 
 	void Update () 
 	{
@@ -37,6 +49,7 @@ public class PlayerMovement : MonoBehaviour {
 
 		Move ();
 		Jump ();
+		Linecast ();
 		transform.position += currentSpeedVector;
 		CameraFollow.inst.UpdatePos (transform.position);
 	}
@@ -55,19 +68,6 @@ public class PlayerMovement : MonoBehaviour {
 				currentSpeedVector.x = 0;
 			}
 		}
-		/*else {
-			if(currentSpeedVector.x > 0){
-				currentSpeedVector.x -= deceleration;
-				if(currentSpeedVector.x < 0) {
-					currentSpeedVector.x = 0;
-				}
-			}
-			else if(currentSpeedVector.x < 0) {
-				currentSpeedVector.x += deceleration;
-				if(currentSpeedVector.x > 0) {
-					currentSpeedVector.x = 0;
-				}
-			}*/
 	}
 
 	private void Jump()
@@ -76,19 +76,17 @@ public class PlayerMovement : MonoBehaviour {
 		bool jumpButtonUp = Input.GetKeyUp ("space");
 		
 		if (jumpButtonDown) {
-			if(!jumping) {
-				if(boosting) {
+			if (!jumping) {
+				if (boosting) {
 					currentJumpSpeed = boostJumpSpeed;
-				}
-				else {
+				} else {
 					currentJumpSpeed = initialJumpSpeed;
 				}
 				jumping = true;
 			}
-		}
-		else if(jumpButtonUp && currentJumpSpeed > 0) {
+		} else if (jumpButtonUp && currentJumpSpeed > 0) {
 			currentJumpSpeed -= gravityFactor;
-			if(currentJumpSpeed < 0) {
+			if (currentJumpSpeed < 0) {
 				jumping = false;
 				currentJumpSpeed = 0;
 			}
